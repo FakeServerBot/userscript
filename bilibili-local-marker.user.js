@@ -273,6 +273,31 @@ window.addEventListener('load', () => {
                 resultWrap.classList.add('LocalMarker-result');
                 resultWrap.innerHTML = resultContent;
 
+                let download_button = document.createElement('span');
+              download_button.classList.add('LocalMarker', 'btn-hover', 'btn-highlight');
+              download_button.innerHTML = '下载记录';
+              download_button.style.userSelect = 'none';
+              download_button.setAttribute('title', '导出所有人的历史记录到本地');
+              download_button.addEventListener('click', e => {
+                  format_as_json();
+              }, false);
+              resultWrap.append(download_button);
+
+              let upload_input = document.createElement('input');
+              upload_input.setAttribute('type', 'file');
+              upload_input.style.color = 'transparent';
+              upload_input.setAttribute('title', '从本地导入历史记录json文件');
+              upload_input.addEventListener('change', function() {
+                  var GetFile = new FileReader();
+                  GetFile.onload=function(){
+                      const json_obj = JSON.parse(GetFile.result);
+                      // console.log(json_obj);
+                      let load_counts = load_json(json_obj);
+                      alert(`${load_counts}条额外的标记信息已成功加载`);
+                  }
+                  GetFile.readAsText(this.files[0]);
+              });
+              resultWrap.append(upload_input);
                 // Remove previous result if exists
                 if (injectWrap.querySelector('.LocalMarker-result')) {
                   injectWrap.querySelector('.LocalMarker-result').remove();
@@ -301,30 +326,6 @@ window.addEventListener('load', () => {
          cancel_mark_status(LocalMarkerEl);
       }, false);
       injectWrap.append(remove_button);
-
-      let download_button = document.createElement('span');
-      download_button.classList.add('LocalMarker', 'btn-hover', 'btn-highlight');
-      download_button.innerHTML = '下载记录';
-      download_button.style.userSelect = 'none';
-      download_button.addEventListener('click', e => {
-         format_as_json();
-      }, false);
-      injectWrap.append(download_button);
-
-      let upload_input = document.createElement('input');
-      upload_input.setAttribute('type', 'file');
-      upload_input.style.color = 'transparent';
-      upload_input.addEventListener('change', function() {
-          var GetFile = new FileReader();
-           GetFile.onload=function(){
-               const json_obj = JSON.parse(GetFile.result);
-               // console.log(json_obj);
-               let load_counts = load_json(json_obj);
-               alert(`${load_counts}条额外的标记信息已成功加载`);
-           }
-            GetFile.readAsText(this.files[0]);
-        });
-     injectWrap.append(upload_input);
     }
   }
 
