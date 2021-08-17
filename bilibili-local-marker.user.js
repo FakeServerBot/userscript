@@ -17,6 +17,8 @@
 // ==/UserScript==
 
 window.addEventListener('load', () => {
+  let front_label_list = ['可爱型', '见多识广型', '真情实感型', '科普型', '技术型', '狗头型', '小作文型'];
+  let end_label_list = ['B站用户', '歪嘴龙王', '话唠', '大佬', '萌新', '宅男', '宅女', '现充', '狗头', '酷盖', 'DD'];
   const DEBUG = true;
   const NAMESPACE = 'bilibili-local-marker';
   var show_details_dict = {}; // Use this to decide when to hide past comments
@@ -232,6 +234,9 @@ window.addEventListener('load', () => {
           if (injectWrap.querySelector('.LocalMarker-result')) {
                injectWrap.querySelector('.LocalMarker-result').remove();
            }
+           if (!injectWrap.querySelector('.LocalMarker-marker-label')) {
+             add_chunk(uid, injectWrap);
+           }
            show_details_dict[id] = true;
       }, false);
 
@@ -281,7 +286,7 @@ window.addEventListener('load', () => {
               download_button.addEventListener('click', e => {
                   format_as_json();
               }, false);
-              resultWrap.append(download_button);
+              // resultWrap.append(download_button);
 
               let upload_input = document.createElement('input');
               upload_input.setAttribute('type', 'file');
@@ -297,7 +302,7 @@ window.addEventListener('load', () => {
                   }
                   GetFile.readAsText(this.files[0]);
               });
-              resultWrap.append(upload_input);
+              // resultWrap.append(upload_input);
                 // Remove previous result if exists
                 if (injectWrap.querySelector('.LocalMarker-result')) {
                   injectWrap.querySelector('.LocalMarker-result').remove();
@@ -319,16 +324,87 @@ window.addEventListener('load', () => {
       remove_button.style.userSelect = 'none';
       remove_button.addEventListener('click', e => {
          remove_all_values_of_target_uid(uid);
-         if (injectWrap.querySelector('.LocalMarker-result')) {
+          if (injectWrap.querySelector('.LocalMarker-result')) {
              injectWrap.querySelector('.LocalMarker-result').remove();
+         }
+         if (injectWrap.querySelector('.LocalMarker-marker-label')) {
+             injectWrap.querySelector('.LocalMarker-marker-label').remove();
          }
          show_details_dict[id] = true;
          cancel_mark_status(LocalMarkerEl);
       }, false);
       injectWrap.append(remove_button);
+      if (is_marked(uid) === true){
+          add_chunk(uid, injectWrap);
+      }
     }
   }
-
+  function add_chunk(uid, injectWrap){
+      let out_div = document.createElement('span');
+      out_div.classList.add('LocalMarker-marker-label');
+      out_div.style.userSelect = 'none';
+      out_div.style.disabled = true;
+      var select_front_list = add_default_list(uid + '_front', front_label_list);
+      out_div.append(select_front_list);
+      var select_end_list = add_default_list(uid + '_end', end_label_list);
+      out_div.append(select_end_list);
+      injectWrap.append(out_div);
+  }
+  function add_default_list(list_id, array){
+      //Create and append select list
+      var selectList = document.createElement("select");
+      selectList.id = "mySelect";
+      // Set the new values...
+      let default_value = GM_SuperValue.get(list_id, array[0]);
+      //Create and append the options
+      for (var i = 0; i < array.length; i++) {
+          var option = document.createElement("option");
+          option.value = array[i];
+          option.text = array[i];
+          if (default_value === option.text){
+              option.selected = "selected";
+          }
+          selectList.appendChild(option);
+      }
+      selectList.style.userSelect = 'none';
+      selectList.addEventListener("change", function() {
+          GM_SuperValue.set(list_id, selectList.value);
+      });
+      return selectList;
+  }
+  function add_selective_list(list_name, injectWrap) {
+      if (get_value(list_name).length === 0){
+          GM_SuperValue.set(list_name, [[], Date.now(), "this is the empty front list"]);
+      }
+      let array = get_value(list_name)[0];
+      var input_chart = document.createElement("input");
+      input_chart.setAttribute('type', 'text');
+      input_chart.setAttribute('list', 'mySelect');
+      //Create and append select list
+      var selectList = document.createElement("datalist");
+      selectList.id = "mySelect";
+      //Create and append the options
+      for (var i = 0; i < array.length; i++) {
+          var option = document.createElement("option");
+          option.value = array[i];
+          option.text = array[i];
+          if (0 === i){
+              option.selected = "selected";
+          }
+          selectList.appendChild(option);
+      }
+      input_chart.addEventListener("change", function() {
+          input_chart.style.width = `${1.3 * Math.max(input_chart.value.length, 4)}em`;
+          array = get_value(list_name)[0];
+          array.push(input_chart.value);
+          // console.log(get_value(list_name));
+          GM_SuperValue.set(list_name, [array, Date.now(), "this is front list"]);
+          console.log(get_value(list_name));
+      });
+      injectWrap.append(input_chart);
+      injectWrap.append(selectList);
+      return selectList;
+  }
   function observeComments(wrapper) {
     // .comment-list - general list for video, zhuanlan, and dongtai
     // .reply-box - replies attached to specific comment
@@ -388,7 +464,7 @@ window.addEventListener('load', () => {
           // debug('mutation wrapper added', item);
 
           if (item.classList?.contains('bb-comment')) {
-            // debug('mutation wrapper added (found target)', item);
+            debug('mutation wrapper added (found target)', item);
 
             observeComments(item);
 
